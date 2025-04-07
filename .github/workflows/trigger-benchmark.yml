@@ -1,7 +1,5 @@
 name: trigger Benchmark
 on:
-  push:
-    branches: []
 
 jobs:
   build:
