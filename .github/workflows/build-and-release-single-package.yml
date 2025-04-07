@@ -70,7 +70,7 @@ jobs:
           ${{ github.event.inputs.target_package }} \
           -v ${{ github.event.inputs.target_version }} \
           -t ${{ github.event.inputs.release_type }} \
-          ${{ github.repository }} | tee -a >>$GITHUB_OUTPUT
+          -r ${{ github.repository }} | tee -a >>$GITHUB_OUTPUT
 
   build-and-release-package:
     needs: setup-versions
