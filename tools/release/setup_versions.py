@@ -161,7 +161,7 @@ This value is extracted from the current branch by default.
             __setup_prod_version(package, version, released_versions, branch_name)
 
     # Print out the latest 'taipy' version that has no extension
-    print(f"LATEST_TAIPY_VERSION={fetch_latest_github_taipy_releases(args.repository_name)}")  # noqa: T201
+    print(f"LATEST_TAIPY_VERSION={fetch_latest_github_taipy_releases(all_releases)}")  # noqa: T201
 
 
 if __name__ == "__main__":
