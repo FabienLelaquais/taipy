@@ -179,20 +179,14 @@ jobs:
           elif [ "${{ github.event.inputs.target_package }}" == "taipy" ]; then
             package_version="${{ needs.setup-versions.outputs.taipy_VERSION }}"
           fi
-          echo "package_version: $package_version"
           package_suffix=""
           if [ "${{ github.event.inputs.target_package }}" != "taipy" ]; then
             package_suffix="-${{ github.event.inputs.target_package }}"
           fi
-          echo "package_suffix: $package_suffix"
           release_name="$package_version$package_suffix"
-          echo "release_name: $release_name"
-          tar_path="./dist/taipy-$package_suffix$package_version.tar.gz"
-          echo "tar_path: $tar_path"
+          tar_path="./dist/taipy$package_suffix-$package_version.tar.gz"
           if [ "${{ github.event.inputs.release_type }}" == "dev" ]; then
-            echo "before gh"
             gh release create $release_name $tar_path --target ${{ steps.extract_hash.outputs.HASH }} --prerelease --title $release_name --notes "Dev Release $release_name"
-            echo "after gh"
           else
             gh release create $release_name $tar_path --target ${{ steps.extract_hash.outputs.HASH }} --title $release_name --notes "Release $release_name"
           fi
