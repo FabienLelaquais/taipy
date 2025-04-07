@@ -146,12 +146,12 @@ jobs:
       - name: Create tag and release
         working-directory: "build_${{ github.event.inputs.target_package }}"
         run: |
-          package_suffix = ""
+          package_suffix=""
           if [ "${{ github.event.inputs.target_package }}" != "taipy" ]; then
-            package_suffix = "-${{ github.event.inputs.target_package }}"
+            package_suffix="-${{ github.event.inputs.target_package }}"
           fi
-          release_name=${{ github.event.inputs.target_version }}$package_suffix
-          tar_path=./dist/taipy-${{ github.event.inputs.target_version }}$package_suffix.tar.gz
+          release_name="${{ github.event.inputs.target_version }}$package_suffix"
+          tar_path="./dist/taipy-${{ github.event.inputs.target_version }}$package_suffix.tar.gz"
           if [ "${{ github.event.inputs.release_type }}" == "dev" ]; then
             gh release create $release_name $tar_path --target ${{ steps.extract_hash.outputs.HASH }} --prerelease --title $release_name --notes "Dev Release $release_name"
           else
