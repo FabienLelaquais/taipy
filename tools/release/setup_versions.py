@@ -33,7 +33,11 @@ from common import Git, Package, Version, fetch_github_releases, fetch_latest_gi
 def __setup_dev_version(package: Package, version: Version, released_versions: list[Version]) -> None:
     # Find latest dev release for that version
     ext_index = 0
-    latest_version = max([v for v in released_versions if v.matches(version) and v.validate_extension()])
+    latest_version = (
+        max([v for v in released_versions if v.matches(version) and v.validate_extension()])
+        if released_versions
+        else None
+    )
     if latest_version:
         _, ext_index = latest_version.split_ext()
         ext_index += 1
