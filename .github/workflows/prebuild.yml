@@ -1,8 +1,6 @@
 name: Generate prebuild for develop branch
 
 on:
-  push:
-    branches: [develop]
   workflow_dispatch:
 
 permissions:
