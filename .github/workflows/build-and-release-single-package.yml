@@ -105,8 +105,8 @@ jobs:
             ${{ needs.setup-versions.outputs.gui_VERSION }} \
             ${{ needs.setup-versions.outputs.rest_VERSION }} \
             ${{ needs.setup-versions.outputs.templates_VERSION }} \
-            ${{ github.event.inputs.sub_packages_location }} \
-            ${{ github.repository }}
+            -deps ${{ github.event.inputs.sub_packages_location }} \
+            -r ${{ github.repository }}
 
       - name: Install dependencies
         run: |
