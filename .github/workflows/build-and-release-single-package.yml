@@ -140,9 +140,23 @@ jobs:
       - name: Build package
         working-directory: "build_${{ github.event.inputs.target_package }}"
         run: |
+          echo step0
+          pwd
+          echo step1
+          ls
+          echo step2
+          ls dist
           python -m build
+          echo step3
+          ls
+          echo step4
+          ls dist
           for file in ./dist/*; do mv "$file" "${file//_/-}"; done
-
+          echo step5
+          ls
+          echo step6
+          ls dist
+          
       - name: Create tag and release
         working-directory: "build_${{ github.event.inputs.target_package }}"
         run: |
