@@ -51,7 +51,6 @@ exclude = [
     "build",
     "dist",
     "releases",
-    "tools",
     ".venv",
     ".mypy_cache",
     ".pytest_cache",
@@ -103,6 +102,6 @@ follow_imports = "skip"
 [tool.codespell]
 skip = '.git,*.pdf,*.svg,go.sum,package-lock.json,*.css'
 check-hidden = true
-ignore-regex = '^\s*"image/\S+": ".*|\b(inPort|anId|IST|Opps|Rouge|notifAction)\b'
+ignore-regex = '^\s*"image/\S+": ".*|\b(inPort|anId|IST|Opps|Rouge)\b'
 # some unfortunate names for variables
-ignore-words-list = 'ags,selt'
+ignore-words-list = 'ags'
