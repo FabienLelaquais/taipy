@@ -30,7 +30,9 @@ import argparse
 from common import Git, Package, Version, fetch_github_releases, fetch_latest_github_taipy_releases
 
 
-def __setup_dev_version(package: Package, version: Version, released_versions: list[Version]) -> None:
+def __setup_dev_version(
+    package: Package, version: Version, released_versions: list[Version], target_version: dict[str, Version]
+) -> None:
     # Find latest dev release for that version
     ext_index = 0
     latest_version = (
@@ -38,11 +40,11 @@ def __setup_dev_version(package: Package, version: Version, released_versions: l
         if released_versions
         else None
     )
+    ext, ext_index = ("dev", 0)
     if latest_version:
-        _, ext_index = latest_version.split_ext()
+        ext, ext_index = latest_version.split_ext()
         ext_index += 1
-    version.ext = f"dev{ext_index}"
-    print(f"{package.short_name}_VERSION={version.full_name}")  # noqa: T201
+    target_version[package.short_name] = Version(version.major, version.minor, version.patch, f"{ext}{ext_index}")
 
 
 def __setup_prod_version(
@@ -136,6 +138,10 @@ This value is extracted from the current branch by default.
     )
     args = parser.parse_args()
 
+    target_version = {}
+    for package_name in Package.names(True):
+        target_version[package_name] = Version.UNKNOWN
+
     all_releases = fetch_github_releases(args.repository_name)
     packages: list[str] = [args.package] if args.package != "all" else Package.names(True)
     branch_name = args.branch_name if args.branch_name else Git.get_current_branch()
@@ -156,10 +162,12 @@ This value is extracted from the current branch by default.
             raise ValueError(f"{version} is already released for package {package.name}.")
 
         if args.release_type == "dev":
-            __setup_dev_version(package, version, released_versions)
+            __setup_dev_version(package, version, released_versions, target_version)
         else:
             __setup_prod_version(package, version, released_versions, branch_name)
 
+    for package_name in Package.names(True):
+        print(f"{package_name}_VERSION={target_version[package_name]}")  # noqa: T201
     # Print out the latest 'taipy' version that has no extension
     print(f"LATEST_TAIPY_VERSION={fetch_latest_github_taipy_releases(all_releases)}")  # noqa: T201
 

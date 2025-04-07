@@ -11,6 +11,7 @@
 # --------------------------------------------------------------------------------------------------
 # Common artifacts used by the other scripts located in this directory.
 # --------------------------------------------------------------------------------------------------
+import argparse
 import json
 import os
 import re
@@ -19,7 +20,6 @@ import typing as t
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-import argparse
 
 import requests
 
@@ -99,17 +99,6 @@ class Version:
         except Exception as e:
             raise argparse.ArgumentTypeError(f"'{value}' is not a valid version number.") from e
         return version
-
-    def bump_ext_version(self) -> "Version":
-        """Returns a new Version object where the extension part version was incremented.
-
-        If this Version has no extension part, this method returns *self*.
-        """
-        if not self.ext or (m := re.search(r"([0-9]+)$", self.ext)) is None:
-            return self
-
-        ext_ver = int(m[1]) + 1
-        return Version(self.major, self.minor, self.patch, f"{self.ext[: m.start(1)]}{ext_ver}")
 
     def validate_extension(self, ext="dev"):
         """Returns True if the extension part of this Version is the one queried."""
@@ -213,6 +202,7 @@ class Package:
     # Base names of the sub packages taipy-*
     # They also are the names of the directory where their code belongs, under the 'taipy' directory,
     # in the root of the Taipy repository.
+    # Order is important: package that are dependent of others must appear first.
     NAMES = ["common", "core", "gui", "rest", "templates"]
 
     _packages = {}
