@@ -62,7 +62,7 @@ jobs:
         run: |
           version="${{ github.event.inputs.target_version }}"
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "❌ Invalid version format: '$version' - <M>.<m.>.<patch> is mandatory."
+            echo "❌ Invalid version format: '$version' - <M>.<m>.<patch> is mandatory."
             exit 1
           fi
           echo "✅ Valid target version: $version"
@@ -72,7 +72,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Setup Version
+      - name: Setup versions
         id: version-setup
         run: |
           python tools/release/setup_versions.py \
@@ -122,17 +122,17 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event.inputs.target_package }}" == "common" ]; then
-            echo "version="${{ needs.setup-versions.outputs.common_VERSION }}" >> $GITHUB_OUTPUT
+            echo "version=${{ needs.setup-versions.outputs.common_VERSION }}" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.target_package }}" == "core" ]; then
-            echo "version="${{ needs.setup-versions.outputs.core_VERSION }}" >> $GITHUB_OUTPUT
+            echo "version=${{ needs.setup-versions.outputs.core_VERSION }}" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.target_package }}" == "gui" ]; then
-            echo "version="${{ needs.setup-versions.outputs.gui_VERSION }}" >> $GITHUB_OUTPUT
+            echo "version=${{ needs.setup-versions.outputs.gui_VERSION }}" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.target_package }}" == "rest" ]; then
-            echo "version="${{ needs.setup-versions.outputs.rest_VERSION }}" >> $GITHUB_OUTPUT
+            echo "version=${{ needs.setup-versions.outputs.rest_VERSION }}" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.target_package }}" == "templates" ]; then
-            echo "version="${{ needs.setup-versions.outputs.templates_VERSION }}" >> $GITHUB_OUTPUT
+            echo "version=${{ needs.setup-versions.outputs.templates_VERSION }}" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.target_package }}" == "taipy" ]; then
-            echo "version="${{ needs.setup-versions.outputs.taipy_VERSION }}" >> $GITHUB_OUTPUT
+            echo "version=${{ needs.setup-versions.outputs.taipy_VERSION }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Install dependencies
