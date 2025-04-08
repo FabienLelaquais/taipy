@@ -61,7 +61,7 @@ def __setup_prod_version(
         )
     target_versions[package.short_name] = version
     # Compute next patch version
-    next_versions[package.short_name] = Version(version.major, version.minor, version.patch+1)
+    next_versions[package.short_name] = Version(version.major, version.minor, version.patch + 1)
 
 
 def main():
@@ -140,12 +140,18 @@ This value is extracted from the current branch by default.
     )
     args = parser.parse_args()
 
+    all_releases = fetch_github_releases(args.repository_name)
     target_versions = {}
     next_versions = {}
     for package_name in Package.names(True):
-        target_versions[package_name] = Version.UNKNOWN
+        package_releases = all_releases.get(Package(package_name))
+        released_versions = [release["version"] for release in package_releases] if package_releases else []
+        target_versions[package_name] = (
+            max([v for v in released_versions if v.matches(args.version, Version.MINOR)])
+            if released_versions
+            else Version.UNKNOWN
+        )
 
-    all_releases = fetch_github_releases(args.repository_name)
     packages: list[str] = [args.package] if args.package != "all" else Package.names(True)
     branch_name = args.branch_name if args.branch_name else Git.get_current_branch()
 
