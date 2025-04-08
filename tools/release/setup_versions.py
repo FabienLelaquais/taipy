@@ -138,7 +138,7 @@ If <release_type> is 'production', this branch has to be a release branch ('rele
 This value is extracted from the current branch by default.
         """,
     )
-    args = parser.parse_args(["core", "-v", "4.1", "-t", "production"])
+    args = parser.parse_args()
 
     all_releases = fetch_github_releases(args.repository_name)
     target_versions = {}
@@ -148,9 +148,9 @@ This value is extracted from the current branch by default.
         released_versions = [release["version"] for release in package_releases] if package_releases else []
         if args.release_type == "production":
             released_versions = list(filter(lambda v: v.ext is None, released_versions))
-        target_version = (
-            max([v for v in released_versions if v.matches(args.version, Version.MINOR)]) if released_versions else None
-        )
+        # Matching versions
+        released_versions = [v for v in released_versions if v.matches(args.version, Version.MINOR)]
+        target_version = max(released_versions) if released_versions else None
         target_versions[package_name] = target_version if target_version else Version.UNKNOWN
 
     packages: list[str] = [args.package] if args.package != "all" else Package.names(True)

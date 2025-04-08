@@ -323,7 +323,6 @@ def fetch_github_releases(gh_path: t.Optional[str] = None) -> dict[Package, list
     # "tag" is the release tag name.
     headers = {"Accept": "application/vnd.github+json"}
     all_releases: dict[str, list[Release]] = {}
-    all_releases: dict[str, list[Release]] = {}
     if gh_path is None:
         gh_path = Git.get_github_path()
         if gh_path is None:
