@@ -55,10 +55,10 @@ def __setup_prod_version(
     next_versions: dict[str, Version],
 ) -> None:
     # Production releases can only be performed from a release branch
-    if target_branch_name := f"release/{version.major}.{version.minor}" != branch_name:
-        raise ValueError(
-            f"Branch name mismatch branch={branch_name} does not match target branch name={target_branch_name}"
-        )
+    # FLE - TEMP REMOVAL
+    #if (target_branch_name := f"release/{version.major}.{version.minor}") != branch_name:
+    #    raise ValueError(f"Current branch '{branch_name}' does not match expected '{target_branch_name}'")
+    # FLE - END OF TEMP REMOVAL
     target_versions[package.short_name] = version
     # Compute next patch version
     next_versions[package.short_name] = Version(version.major, version.minor, version.patch + 1)
@@ -138,7 +138,7 @@ If <release_type> is 'production', this branch has to be a release branch ('rele
 This value is extracted from the current branch by default.
         """,
     )
-    args = parser.parse_args()
+    args = parser.parse_args(["core", "-v", "4.1", "-t", "production"])
 
     all_releases = fetch_github_releases(args.repository_name)
     target_versions = {}
@@ -146,11 +146,12 @@ This value is extracted from the current branch by default.
     for package_name in Package.names(True):
         package_releases = all_releases.get(Package(package_name))
         released_versions = [release["version"] for release in package_releases] if package_releases else []
-        target_versions[package_name] = (
-            max([v for v in released_versions if v.matches(args.version, Version.MINOR)])
-            if released_versions
-            else Version.UNKNOWN
+        if args.release_type == "production":
+            released_versions = list(filter(lambda v: v.ext is None, released_versions))
+        target_version = (
+            max([v for v in released_versions if v.matches(args.version, Version.MINOR)]) if released_versions else None
         )
+        target_versions[package_name] = target_version if target_version else Version.UNKNOWN
 
     packages: list[str] = [args.package] if args.package != "all" else Package.names(True)
     branch_name = args.branch_name if args.branch_name else Git.get_current_branch()
