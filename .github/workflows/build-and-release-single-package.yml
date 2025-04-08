@@ -135,33 +135,25 @@ jobs:
 
       - name: Build Package Structure
         run: |
-          python tools/release/build_package_structure.py ${{ github.event.inputs.target_package }}
+          if [ "${{ github.event.inputs.target_package }}" == "common" ]; then
+            package_version="${{ needs.setup-versions.outputs.common_VERSION }}"
+          elif [ "${{ github.event.inputs.target_package }}" == "core" ]; then
+            package_version="${{ needs.setup-versions.outputs.core_VERSION }}"
+          elif [ "${{ github.event.inputs.target_package }}" == "gui" ]; then
+            package_version="${{ needs.setup-versions.outputs.gui_VERSION }}"
+          elif [ "${{ github.event.inputs.target_package }}" == "rest" ]; then
+            package_version="${{ needs.setup-versions.outputs.rest_VERSION }}"
+          elif [ "${{ github.event.inputs.target_package }}" == "templates" ]; then
+            package_version="${{ needs.setup-versions.outputs.templates_VERSION }}"
+          elif [ "${{ github.event.inputs.target_package }}" == "taipy" ]; then
+            package_version="${{ needs.setup-versions.outputs.taipy_VERSION }}"
+          python tools/release/build_package_structure.py ${{ github.event.inputs.target_package }} $package_version
 
       - name: Build package
         working-directory: "build_${{ github.event.inputs.target_package }}"
         run: |
-          echo step0
-          pwd
-          echo step1
-          ls
-          if [ -d dist ]; then
-            echo step2
-            ls dist
-          fi
           python -m build
-          echo step3
-          ls
-          if [ -d dist ]; then
-            echo step4
-            ls dist
-          fi
           for file in ./dist/*; do mv "$file" "${file//_/-}"; done
-          echo step5
-          ls
-          if [ -d dist ]; then
-            echo step6
-            ls dist
-          fi
           
       - name: Create tag and release
         working-directory: "build_${{ github.event.inputs.target_package }}"

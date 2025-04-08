@@ -48,18 +48,20 @@ def __setup_dev_version(
 
 
 def __setup_prod_version(
-    package: Package, version: Version, released_versions: list[Version], branch_name: str
+    package: Package,
+    version: Version,
+    branch_name: str,
+    target_versions: dict[str, Version],
+    next_versions: dict[str, Version],
 ) -> None:
     # Production releases can only be performed from a release branch
     if target_branch_name := f"release/{version.major}.{version.minor}" != branch_name:
         raise ValueError(
             f"Branch name mismatch branch={branch_name} does not match target branch name={target_branch_name}"
         )
-    var_name = f"{package.short_name}_VERSION"
-    print(f"{var_name}={version.name}")  # noqa: T201
+    target_versions[package.short_name] = version
     # Compute next patch version
-    version.patch = version.patch + 1
-    print(f"NEXT_{var_name}={version.full_name}")  # noqa: T201
+    next_versions[package.short_name] = Version(version.major, version.minor, version.patch+1)
 
 
 def main():
@@ -138,9 +140,10 @@ This value is extracted from the current branch by default.
     )
     args = parser.parse_args()
 
-    target_version = {}
+    target_versions = {}
+    next_versions = {}
     for package_name in Package.names(True):
-        target_version[package_name] = Version.UNKNOWN
+        target_versions[package_name] = Version.UNKNOWN
 
     all_releases = fetch_github_releases(args.repository_name)
     packages: list[str] = [args.package] if args.package != "all" else Package.names(True)
@@ -154,7 +157,7 @@ This value is extracted from the current branch by default.
         if version != args.version:
             raise ValueError(
                 f"Target version ({args.version.full_name}) does not equal version"
-                + f" in package {package.name} ({version.full_name})."
+                + f" {version.full_name} in package {package.name}."
             )
         package_releases = all_releases.get(package)
         released_versions = [release["version"] for release in package_releases] if package_releases else []
@@ -162,12 +165,15 @@ This value is extracted from the current branch by default.
             raise ValueError(f"{version} is already released for package {package.name}.")
 
         if args.release_type == "dev":
-            __setup_dev_version(package, version, released_versions, target_version)
+            __setup_dev_version(package, version, released_versions, target_versions)
         else:
-            __setup_prod_version(package, version, released_versions, branch_name)
+            __setup_prod_version(package, version, branch_name, target_versions, next_versions)
 
-    for package_name in Package.names(True):
-        print(f"{package_name}_VERSION={target_version[package_name]}")  # noqa: T201
+    for p, v in target_versions.items():
+        print(f"{p}_VERSION={v}")  # noqa: T201
+    if next_versions:
+        for p, v in next_versions.items():
+            print(f"NEXT_{p}_VERSION={v}")  # noqa: T201
     # Print out the latest 'taipy' version that has no extension
     print(f"LATEST_TAIPY_VERSION={fetch_latest_github_taipy_releases(all_releases)}")  # noqa: T201
 
