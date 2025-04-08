@@ -58,6 +58,15 @@ jobs:
         shell: bash
         run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
 
+      - name: Validate target version
+        run: |
+          version="${{ github.event.inputs.target_version }}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format: '$version' - <M>.<m.>.<patch> is mandatory."
+            exit 1
+          fi
+          echo "✅ Valid target version: $version"
+
       - name: Install mandatory Python packages
         run: |
           python -m pip install --upgrade pip
@@ -108,6 +117,24 @@ jobs:
             -deps ${{ github.event.inputs.sub_packages_location }} \
             -r ${{ github.repository }}
 
+      - name: Set package version for ${{ github.event.inputs.target_package }} ${{ github.event.inputs.target_version }}
+        id: package-version
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.target_package }}" == "common" ]; then
+            echo "version="${{ needs.setup-versions.outputs.common_VERSION }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.target_package }}" == "core" ]; then
+            echo "version="${{ needs.setup-versions.outputs.core_VERSION }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.target_package }}" == "gui" ]; then
+            echo "version="${{ needs.setup-versions.outputs.gui_VERSION }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.target_package }}" == "rest" ]; then
+            echo "version="${{ needs.setup-versions.outputs.rest_VERSION }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.target_package }}" == "templates" ]; then
+            echo "version="${{ needs.setup-versions.outputs.templates_VERSION }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.target_package }}" == "taipy" ]; then
+            echo "version="${{ needs.setup-versions.outputs.taipy_VERSION }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -135,19 +162,7 @@ jobs:
 
       - name: Build Package Structure
         run: |
-          if [ "${{ github.event.inputs.target_package }}" == "common" ]; then
-            package_version="${{ needs.setup-versions.outputs.common_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "core" ]; then
-            package_version="${{ needs.setup-versions.outputs.core_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "gui" ]; then
-            package_version="${{ needs.setup-versions.outputs.gui_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "rest" ]; then
-            package_version="${{ needs.setup-versions.outputs.rest_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "templates" ]; then
-            package_version="${{ needs.setup-versions.outputs.templates_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "taipy" ]; then
-            package_version="${{ needs.setup-versions.outputs.taipy_VERSION }}"
-          python tools/release/build_package_structure.py ${{ github.event.inputs.target_package }} $package_version
+          python tools/release/build_package_structure.py ${{ github.event.inputs.target_package }} ${{ steps.package-version.outputs.version }}
 
       - name: Build package
         working-directory: "build_${{ github.event.inputs.target_package }}"
@@ -158,25 +173,12 @@ jobs:
       - name: Create tag and release
         working-directory: "build_${{ github.event.inputs.target_package }}"
         run: |
-          if [ "${{ github.event.inputs.target_package }}" == "common" ]; then
-            package_version="${{ needs.setup-versions.outputs.common_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "core" ]; then
-            package_version="${{ needs.setup-versions.outputs.core_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "gui" ]; then
-            package_version="${{ needs.setup-versions.outputs.gui_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "rest" ]; then
-            package_version="${{ needs.setup-versions.outputs.rest_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "templates" ]; then
-            package_version="${{ needs.setup-versions.outputs.templates_VERSION }}"
-          elif [ "${{ github.event.inputs.target_package }}" == "taipy" ]; then
-            package_version="${{ needs.setup-versions.outputs.taipy_VERSION }}"
-          fi
           package_suffix=""
           if [ "${{ github.event.inputs.target_package }}" != "taipy" ]; then
             package_suffix="-${{ github.event.inputs.target_package }}"
           fi
-          release_name="$package_version$package_suffix"
-          tar_path="./dist/taipy$package_suffix-$package_version.tar.gz"
+          release_name="${{ steps.package-version.outputs.version }}$package_suffix"
+          tar_path="./dist/taipy$package_suffix-${{ steps.package-version.outputs.version }}.tar.gz"
           if [ "${{ github.event.inputs.release_type }}" == "dev" ]; then
             gh release create $release_name $tar_path --target ${{ steps.extract_hash.outputs.HASH }} --prerelease --title $release_name --notes "Dev Release $release_name"
           else
