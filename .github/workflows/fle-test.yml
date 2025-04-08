@@ -1,0 +1,40 @@
+name: FLE test
+
+on:
+  workflow_dispatch:
+    inputs:
+      value1:
+        description: "Value 1"
+      value2:
+        description: "Value 2"
+
+permissions:
+  contents: write
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+        common_VERSION: ${{ steps.version-setup.outputs.common_VERSION }}
+        core_VERSION: ${{ steps.version-setup.outputs.core_VERSION }}
+        gui_VERSION: ${{ steps.version-setup.outputs.gui_VERSION }}
+        rest_VERSION: ${{ steps.version-setup.outputs.rest_VERSION }}
+        templates_VERSION: ${{ steps.version-setup.outputs.templates_VERSION }}
+        taipy_VERSION: ${{ steps.version-setup.outputs.taipy_VERSION }}
+        LATEST_TAIPY_VERSION: ${{ steps.version-setup.outputs.LATEST_TAIPY_VERSION }}
+    steps:
+      - name: Check variables
+        run: |
+          v1="${{ github.event.inputs.value1 }}"
+          if [ -z "$v1" ]; then
+            echo "❌ value1 is empty."
+            exit 1
+          else
+            echo "✅ value1 is $v1"
+          fi
+          if [ -z "$v2" ]; then
+            echo "❌ value2 is empty."
+            exit 1
+          else
+            echo "✅ value2 is $v2"
+          fi
