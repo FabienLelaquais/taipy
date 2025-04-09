@@ -6,6 +6,6 @@ if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir);
 }
 
-const outputPath = path.join(distDir, process.argv[2]);
+const outputPath = path.join(distDir, `${process.argv[2]}.js`);
 fs.writeFileSync(outputPath, `console.log(\"Hello from mock ${process.argv[3]} build for ${process.argv[2]}\");\n`);
 console.log(`Wrote mock build to ${outputPath}`);
