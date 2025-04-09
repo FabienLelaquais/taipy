@@ -165,7 +165,9 @@ jobs:
         working-directory: "build_${{ github.event.inputs.target_package }}"
         run: |
           python -m build
-          for file in ./dist/*_*; do mv "$file" "${file//_/-}"; done
+          if compgen -G "./dist/*_*" > /dev/null; then
+            for file in ./dist/*_*; do mv "$file" "${file//_/-}"; done
+          fi
           
       - name: Create tag and release
         working-directory: "build_${{ github.event.inputs.target_package }}"
