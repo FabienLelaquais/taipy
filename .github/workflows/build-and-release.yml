@@ -233,7 +233,7 @@ jobs:
         working-directory: "build_taipy"
         run: |
           python -m build
-          for file in ./dist/*; do mv "$file" "${file//_/-}"; done
+          for file in ./dist/*_*; do mv "$file" "${file//_/-}"; done
 
       - name: Create tag and release Taipy
         working-directory: "build_taipy"
