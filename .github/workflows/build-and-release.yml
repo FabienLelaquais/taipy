@@ -131,19 +131,19 @@ jobs:
           pip install build wheel pipenv mypy black isort
 
       - name: Build GUI front-end
-        if: matrix.package == 'gui'
+        if: ${{ matrix.package == 'gui' }}
         run: |
           pipenv install --dev
           pipenv run python tools/gui/generate_pyi.py
           python tools/frontend/bundle_build.py gui
 
       - name: Archive the GUI front-end
-        if: matrix.package == 'gui'
+        if: ${{ matrix.package == 'gui' }}
         run: |
           tar -czf gui-frontend.tar.gz taipy/gui/webapp
 
       - name: Upload front-end archive as an artifact
-        if: matrix.package == 'gui'
+        if: ${{ matrix.package == 'gui' }}
         uses: actions/upload-artifact@v4
         with:
           name: gui-frontend
@@ -270,12 +270,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bump patch versions
-        if: github.event.inputs.release_type == 'production'
+        if: ${{ github.event.inputs.release_type == 'production' }}
         run: |
           python tools/release/bump_patch_version.py all
 
       - uses: stefanzweifel/git-auto-commit-action@v5
-        if: github.event.inputs.release_type == 'production'
+        if: ${{ github.event.inputs.release_type == 'production' }}
         with:
           branch: "devops/bump-patch-version-${{ github.run_id }}"
           create_branch: "true"
@@ -283,7 +283,7 @@ jobs:
           commit_message: Bump patch versions for ${{ needs.setup-versions.outputs.taipy_VERSION }}
 
       - name: Create pull request
-        if: github.event.inputs.release_type == 'production'
+        if: ${{ github.event.inputs.release_type == 'production' }}
         run: gh pr create -B "${{ needs.setup-versions.outputs.branch }}" -H "devops/bump-patch-version-${{ github.run_id }}" --title "Bump patch version" --body "Created by GitHub action build-and-release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

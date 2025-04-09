@@ -138,17 +138,17 @@ jobs:
           pip install build wheel pipenv mypy black isort
 
       - name: Install GUI dependencies
-        if: ${{ github.event.inputs.target_package == 'gui' }} || ${{ github.event.inputs.target_package == 'taipy' }}
+        if: ${{ github.event.inputs.target_package == 'gui' || github.event.inputs.target_package == 'taipy' }}
         run: |
           pipenv install --dev
 
       - name: Generate GUI pyi file
-        if: github.event.inputs.target_package == 'gui'
+        if: ${{ github.event.inputs.target_package == 'gui' }}
         run: |
           pipenv run python tools/gui/generate_pyi.py
 
       - name: Build Taipy GUI front-end
-        if: ${{ github.event.inputs.target_package == 'gui' }} || ${{ github.event.inputs.target_package == 'taipy' }}
+        if: ${{ github.event.inputs.target_package == 'gui' || github.event.inputs.target_package == 'taipy' }}
         run: |
           python tools/frontend/bundle_build.py gui
 
@@ -188,12 +188,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bump patch version
-        if: ${{ github.event.inputs.release_type }} == "production"
+        if: ${{ github.event.inputs.release_type == 'production' }}
         run: |
           python tools/release/bump_patch_version.py ${{ github.event.inputs.target_package }}
 
       - uses: stefanzweifel/git-auto-commit-action@v5
-        if: ${{ github.event.inputs.release_type }} == "production"
+        if: ${{ github.event.inputs.release_type == 'production' }}
         with:
           branch: "devops/bump-patch-version-for-${{ github.event.inputs.target_package }}-${{ github.run_id }}"
           create_branch: "true"
@@ -201,7 +201,7 @@ jobs:
           commit_message: Bump patch versions for ${{ github.event.inputs.target_package }}
 
       - name: Create pull request
-        if: ${{ github.event.inputs.release_type }} == "production"
+        if: ${{ github.event.inputs.release_type == 'production' }}
         run: gh pr create -B "${{ needs.setup-versions.outputs.branch }}" -H "devops/bump-patch-version-for-${{ github.event.inputs.target_package }}-${{ github.run_id }}" --title "Bump patch version" --body "Created by GitHub action build-and-release-single-package"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
