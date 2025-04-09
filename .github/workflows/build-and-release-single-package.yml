@@ -1,4 +1,4 @@
-name: Build and release one taipy sub-package
+name: Build one taipy sub-package release
 
 on:
   workflow_dispatch:
@@ -80,7 +80,7 @@ jobs:
           -r ${{ github.repository }} >>$GITHUB_OUTPUT
           echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >>$GITHUB_OUTPUT
 
-  build-and-release-package:
+  build-package-release:
     needs: setup-versions
     timeout-minutes: 20
     runs-on: ubuntu-latest
@@ -91,7 +91,7 @@ jobs:
           python-version: 3.9
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Extract commit hash
         id: extract_hash
@@ -138,7 +138,7 @@ jobs:
           pip install build wheel pipenv mypy black isort
 
       - name: Install GUI dependencies
-        if: ${{ github.event.inputs.target_package == 'gui' || github.event.inputs.target_package == 'taipy' }}
+        if: ${{ github.event.inputs.target_package == 'gui' }} || ${{ github.event.inputs.target_package == 'taipy' }}
         run: |
           pipenv install --dev
 
@@ -148,7 +148,7 @@ jobs:
           pipenv run python tools/gui/generate_pyi.py
 
       - name: Build Taipy GUI front-end
-        if: ${{ github.event.inputs.target_package == 'gui' || github.event.inputs.target_package == 'taipy' }}
+        if: ${{ github.event.inputs.target_package == 'gui' }} || ${{ github.event.inputs.target_package == 'taipy' }}
         run: |
           python tools/frontend/bundle_build.py gui
 
@@ -194,8 +194,8 @@ jobs:
         if: ${{ github.event.inputs.release_type }} == "production"
         with:
           branch: "devops/bump-patch-version-for-${{ github.event.inputs.target_package }}-${{ github.run_id }}"
-          create_branch: 'true'
-          file_pattern: '**/version.json'
+          create_branch: "true"
+          file_pattern: "**/version.json"
           commit_message: Bump patch versions for ${{ github.event.inputs.target_package }}
 
       - name: Create pull request

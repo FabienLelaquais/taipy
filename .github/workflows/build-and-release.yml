@@ -1,4 +1,4 @@
-name: Build all taipy packages and release them
+name: Build all taipy package releases
 
 on:
   workflow_dispatch:
@@ -69,7 +69,7 @@ jobs:
           -r ${{ github.repository }} | tee -a >>$GITHUB_OUTPUT
           echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >>$GITHUB_OUTPUT
 
-  build-and-release-sub-packages:
+  build-sub-packager-releases:
     needs: setup-versions
     timeout-minutes: 20
     runs-on: ubuntu-latest
@@ -84,7 +84,7 @@ jobs:
           python-version: 3.9
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Extract commit hash
         id: extract_hash
@@ -130,20 +130,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install build wheel pipenv mypy black isort
 
-      - name: Install GUI dependencies
-        if: ${{ matrix.package }} == "gui"
+      - name: Build GUI front-end
+        if: matrix.package == 'gui'
         run: |
           pipenv install --dev
-
-      - name: Generate GUI pyi file
-        if: ${{ matrix.package }} == "gui"
-        run: |
           pipenv run python tools/gui/generate_pyi.py
-
-      - name: Build Taipy GUI front-end
-        if: ${{ matrix.package }} == "taipy"
-        run: |
           python tools/frontend/bundle_build.py gui
+
+      - name: Archive the GUI front-end
+        if: matrix.package == 'gui'
+        run: |
+          tar -czf gui-frontend.tar.gz taipy/gui/webapp
+
+      - name: Upload front-end archive as an artifact
+        if: matrix.package == 'gui'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-frontend
+          path: gui-frontend.tar.gz
 
       - name: Build package structure
         run: |
@@ -154,7 +158,7 @@ jobs:
         run: |
           python -m build
           for file in ./dist/*; do mv "$file" "${file//_/-}"; done
-          
+
       - name: Create tag and release
         working-directory: "build_${{ matrix.package }}"
         run: |
@@ -170,9 +174,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-and-release-taipy:
+  build-taipy-release:
     runs-on: ubuntu-latest
-    needs: [setup-versions, build-and-release-sub-packages]
+    needs: [setup-versions, build-sub-packager-releases]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -181,7 +185,7 @@ jobs:
           python-version: 3.9
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Extract commit hash
         id: extract_hash
@@ -209,7 +213,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install build wheel pipenv mypy black isort
 
-      - name: Build Taipy GUI front-end
+      - uses: actions/download-artifact@v4
+        with:
+          name: gui-frontend
+          path: .
+
+      - name: Retrieve the GUI front-end
+        run: tar -xzf gui-frontend.tar.gz
+
+      - name: Build Taipy front-end
         run: |
           python tools/frontend/bundle_build.py taipy
 
@@ -222,7 +234,7 @@ jobs:
         run: |
           python -m build
           for file in ./dist/*; do mv "$file" "${file//_/-}"; done
-          
+
       - name: Create tag and release Taipy
         working-directory: "build_taipy"
         run: |
@@ -238,6 +250,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download packages
+        working-directory: "build_taipy"
         run: |
           gh release download ${{ needs.setup-versions.outputs.common_VERSION }}-common --skip-existing --dir dist
           gh release download ${{ needs.setup-versions.outputs.core_VERSION }}-core --skip-existing --dir dist
@@ -248,26 +261,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bundle all packages in main release tag
+        working-directory: "build_taipy"
         run: |
           find dist -type f -print0 | xargs -r0 gh release upload ${{ needs.setup-versions.outputs.taipy_VERSION }} --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bump patch versions
-        if: ${{ github.event.inputs.release_type }} == "production"
+        if: github.event.inputs.release_type == 'production'
         run: |
           python tools/release/bump_patch_version.py all
 
       - uses: stefanzweifel/git-auto-commit-action@v5
-        if: ${{ github.event.inputs.release_type }} == "production"
+        if: github.event.inputs.release_type == 'production'
         with:
           branch: "devops/bump-patch-version-${{ github.run_id }}"
-          create_branch: 'true'
-          file_pattern: '**/version.json'
+          create_branch: "true"
+          file_pattern: "**/version.json"
           commit_message: Bump patch versions for ${{ needs.setup-versions.outputs.taipy_VERSION }}
 
       - name: Create pull request
-        if: ${{ github.event.inputs.release_type }} == "production"
+        if: github.event.inputs.release_type == 'production'
         run: gh pr create -B "${{ needs.setup-versions.outputs.branch }}" -H "devops/bump-patch-version-${{ github.run_id }}" --title "Bump patch version" --body "Created by GitHub action build-and-release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
