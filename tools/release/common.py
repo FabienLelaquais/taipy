@@ -416,5 +416,6 @@ def fetch_latest_github_taipy_releases(
         # Retrieve all non-dev releases
         versions = [release["version"] for release in releases if release["version"].ext is None]
         # Find the latest
-        latest_taipy_version = max(versions)
+        if versions:
+            latest_taipy_version = max(versions)
     return latest_taipy_version
