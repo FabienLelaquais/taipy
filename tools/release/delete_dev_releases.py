@@ -18,22 +18,6 @@ import requests
 from common import Git, Version, fetch_github_releases
 
 
-def check_target_version(value: str):
-    try:
-        version = Version.from_string(value)
-    except Exception as e:
-        raise argparse.ArgumentTypeError(f"'{value}' is not a valid version number.") from e
-    if version.ext:
-        raise argparse.ArgumentTypeError(f"Version '{value}' must must have an extension.")
-    return version
-
-
-def check_repository_path(value: str):
-    if len(value.split("/")) != 2:
-        raise argparse.ArgumentTypeError(f"'{value}' is not a valid '<owner>/<repo>' path.")
-    return value
-
-
 def main(arg_strings=None):
     parser = argparse.ArgumentParser(
         description="Deletes Taipy package dev releases and tags from GitHub.",
@@ -42,14 +26,20 @@ def main(arg_strings=None):
     parser.add_argument(
         "version",
         action="store",
-        type=check_target_version,
+        type=Version.check_argument,
         help="""The version (M.m.p) of the releases to be deleted.
 The indicated version must not have extensions.""",
     )
+
+    def _check_repository_path(value: str):
+        if len(value.split("/")) != 2:
+            raise argparse.ArgumentTypeError(f"'{value}' is not a valid '<owner>/<repo>' path.")
+        return value
+
     parser.add_argument(
         "-r",
         "--repository_path",
-        type=check_repository_path,
+        type=_check_repository_path,
         help="""The '<owner>/<repo>' string that identifies the repository where releases are fetched.
 The default is the current repository.""",
     )

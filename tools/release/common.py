@@ -20,12 +20,12 @@ import typing as t
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-
+from functools import total_ordering
 import requests
 
 
 # --------------------------------------------------------------------------------------------------
-@dataclass(order=True)
+@dataclass(frozen=True)
 class Version:
     """Helps manipulate version numbers."""
 
@@ -190,6 +190,39 @@ class Version:
         if level >= self.PATCH and self.patch != version.patch:
             return False
         return True
+
+    def __lt__(self, other: "Version") -> bool:
+        if not isinstance(other, Version):
+            return NotImplemented
+
+        # Compare major, minor, patch
+        self_tuple = (self.major, self.minor, self.patch)
+        other_tuple = (other.major, other.minor, other.patch)
+        if self_tuple != other_tuple:
+            return self_tuple < other_tuple
+
+        # Same version number, now compare extensions
+        return self._ext_sort_key() < other._ext_sort_key()
+
+    def _ext_sort_key(self) -> t.Tuple[int, str, int]:
+        """
+        Defines ordering for extensions.
+        Final versions (None) are considered greater than prereleases.
+
+        Example sort order:
+        1.0.0.dev1 < 1.0.0.rc1 < 1.0.0 < 1.0.1
+        """
+        if self.ext is None:
+            return (2, "", 0)  # Final release — highest priority
+
+        # Parse extension like "dev1" into prefix + number
+        match = re.match(r"([a-zA-Z]+)(\d*)", self.ext)
+        if match:
+            label, num = match.groups()
+            num_val = int(num) if num else 0
+            return (1, label, num_val)  # Pre-release
+        else:
+            return (0, self.ext, 0)  # Unknown extension format — lowest priority
 
 
 Version.UNKNOWN = Version(0, 0)

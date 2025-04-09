@@ -26,6 +26,7 @@
 # --------------------------------------------------------------------------------------------------
 
 import argparse
+import os
 
 from common import Git, Package, Version, fetch_github_releases, fetch_latest_github_taipy_releases
 
@@ -55,10 +56,10 @@ def __setup_prod_version(
     next_versions: dict[str, Version],
 ) -> None:
     # Production releases can only be performed from a release branch
-    # FLE - TEMP REMOVAL
-    #if (target_branch_name := f"release/{version.major}.{version.minor}") != branch_name:
-    #    raise ValueError(f"Current branch '{branch_name}' does not match expected '{target_branch_name}'")
-    # FLE - END OF TEMP REMOVAL
+    if (os.environ.get("GITHUB_ACTIONS") == "true") and (
+        target_branch_name := f"release/{version.major}.{version.minor}"
+    ) != branch_name:
+        raise ValueError(f"Current branch '{branch_name}' does not match expected '{target_branch_name}'")
     target_versions[package.short_name] = version
     # Compute next patch version
     next_versions[package.short_name] = Version(version.major, version.minor, version.patch + 1)
@@ -148,6 +149,8 @@ This value is extracted from the current branch by default.
         released_versions = [release["version"] for release in package_releases] if package_releases else []
         if args.release_type == "production":
             released_versions = list(filter(lambda v: v.ext is None, released_versions))
+        else:
+            released_versions = list(filter(lambda v: v.ext is not None, released_versions))
         # Matching versions
         released_versions = [v for v in released_versions if v.matches(args.version, Version.MINOR)]
         target_version = max(released_versions) if released_versions else None
@@ -163,7 +166,7 @@ This value is extracted from the current branch by default.
             raise ValueError(f"Package version for '{package.name}' has an extension ({version.full_name}).")
         if version != args.version:
             raise ValueError(
-                f"Target version ({args.version.full_name}) does not equal version"
+                f"Target version ({args.version.full_name}) does not match version"
                 + f" {version.full_name} in package {package.name}."
             )
         package_releases = all_releases.get(package)

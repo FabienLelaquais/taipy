@@ -1,4 +1,4 @@
-name: Build and release one taipy package
+name: Build and release one taipy sub-package
 
 on:
   workflow_dispatch:
@@ -39,11 +39,13 @@ env:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   setup-versions:
     runs-on: ubuntu-latest
     outputs:
+        branch: ${{ steps.version-setup.outputs.branch }}
         common_VERSION: ${{ steps.version-setup.outputs.common_VERSION }}
         core_VERSION: ${{ steps.version-setup.outputs.core_VERSION }}
         gui_VERSION: ${{ steps.version-setup.outputs.gui_VERSION }}
@@ -53,10 +55,6 @@ jobs:
         LATEST_TAIPY_VERSION: ${{ steps.version-setup.outputs.LATEST_TAIPY_VERSION }}
     steps:
       - uses: actions/checkout@v4
-      - name: Extract branch name
-        id: extract_branch
-        shell: bash
-        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
 
       - name: Validate target version
         run: |
@@ -79,7 +77,8 @@ jobs:
           ${{ github.event.inputs.target_package }} \
           -v ${{ github.event.inputs.target_version }} \
           -t ${{ github.event.inputs.release_type }} \
-          -r ${{ github.repository }} | tee -a >>$GITHUB_OUTPUT
+          -r ${{ github.repository }} >>$GITHUB_OUTPUT
+          echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >>$GITHUB_OUTPUT
 
   build-and-release-package:
     needs: setup-versions
@@ -87,8 +86,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ssh-key: ${{ secrets.DEPLOY_KEY }}
       - uses: actions/setup-python@v5
         with:
           python-version: 3.9
@@ -185,6 +182,25 @@ jobs:
             gh release create $release_name $tar_path --target ${{ steps.extract_hash.outputs.HASH }} --title $release_name --notes "Release $release_name"
           fi
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump patch version
+        if: ${{ github.event.inputs.release_type }} == "production"
+        run: |
+          python tools/release/bump_patch_version.py ${{ github.event.inputs.target_package }}
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        if: ${{ github.event.inputs.release_type }} == "production"
+        with:
+          branch: "devops/bump-patch-version-for-${{ github.event.inputs.target_package }}-${{ github.run_id }}"
+          create_branch: 'true'
+          file_pattern: '**/version.json'
+          commit_message: Bump patch versions for ${{ github.event.inputs.target_package }}
+
+      - name: Create pull request
+        if: ${{ github.event.inputs.release_type }} == "production"
+        run: gh pr create -B "${{ needs.setup-versions.outputs.branch }}" -H "devops/bump-patch-version-for-${{ github.event.inputs.target_package }}-${{ github.run_id }}" --title "Bump patch version" --body "Created by GitHub action build-and-release-single-package"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

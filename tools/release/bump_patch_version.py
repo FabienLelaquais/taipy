@@ -16,7 +16,7 @@
 
 import argparse
 
-from common import Package
+from common import Package, Version
 
 
 def main():
@@ -41,8 +41,7 @@ If can also be set to 'ALL' then all packages are impacted.
         version = package.load_version()
         if version.ext:
             raise ValueError(f"Package version for '{package.name}' has an extension ({version.full_name}).")
-        version.patch = version.patch+1
-        package.save_version(version)
+        package.save_version(Version(version.major, version.minor, version.patch + 1))
 
 if __name__ == "__main__":
     main()
